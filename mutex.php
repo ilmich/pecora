@@ -53,18 +53,26 @@ class Mutex {
 		 * Parameter passing error handling
 		 */
 
+		$fp=false;		
 		if(!is_int($polling) || $polling < 1) $polling = 1;
 
+		$retry = intval((ini_get('max_execution_time')/$polling));
+		
+		if ($retry == 0) {
+			$retry = 10;
+		}		
 		/**
 		 * Code section
 		 */
 		
 		// Create the directory and hang in the case of a preexisting lock
-		while(!@mkdir($this->dirname))
-			sleep($polling);
+		while(!($fp = @mkdir($this->dirname)) && $retry-->0) {			
+			sleep($polling);	
+		}
+		
 
 		// Successful lock
-		return true;
+		return $fp;
 	}
 
 	/**
