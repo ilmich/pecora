@@ -16,6 +16,6 @@ error_reporting(E_ALL);
  * @return string sanitized data
  */
 function sanitize($entry){
-	return preg_replace(array('/\\x1a/', '/\\x2a\\x2f/'), array(P_SUB, P_HAZ), $entry);
+	return str_replace(array('\x1a', '\x2a\x2f'),array(P_SUB, P_HAZ), $entry);
 }
 ?>
