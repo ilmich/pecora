@@ -238,16 +238,21 @@ class Pecora{
 	 * @return array an array whose first value is the historical count and the second value is the unique count
 	 */
 	function entries(){
-		// Code
-		if(false === $tableStruct = file_cull_contents($this->struct, -12, 8, SEEK_END))
+		// Code		
+		if(false === $tableStruct = file_get_contents($this->struct))
 			return !trigger_error('[' . basename(__FILE__) . '] &lt; ' . __LINE__ . ' &gt;', E_USER_WARNING);
-		$tableStruct = unpack('N*', desanitize($tableStruct));
+		$tableStruct = substr($tableStruct, 8, -4);
+		$tableStruct = explode(P_SSEP, $tableStruct);
+		
+		$tableStruct[4] = unpack('N*', desanitize($tableStruct[4]));
+		
 		return array(
-			'history' => $tableStruct[1] + $tableStruct[2], 
-			'unique' => $tableStruct[1]
+			'history' => $tableStruct[4][2] + $tableStruct[4][3], 
+			'unique' => $tableStruct[4][2]
 		);
 	}
 
+	
 	/**
 	 * A method that inserts rows into a table (if the table does not exist it attempts to create it)
 	 *
