@@ -9,65 +9,52 @@
 error_reporting(E_ALL);
 
 /**
- * Defines the delimeter character used to sanitize and separate polarized data
- *
- * @access private
- */
-define('P_DLM', "\x1a");	// ASCII 26
-
-/**
- * Defines the string that causes vulnerability issues
- *
- * @access private
- */
-define('P_VUL', "\x2a\x2f");	// Refers to multi-line comment */
-
-/**
- * Defines the substitution string for the delimeter character
- *
- * @access private
- */
-define('P_SUB', "\x1a0");	// Substitute for ASCII char 26
-
-/**
- * Defines the substitution string for sanitizing polarized data
- *
- * @access private
- */
-define('P_HAZ', "\x1a2");	// Substitute for multi-line
-
-/**
- * Defines the field separation string for polarized data
- *
- * @access private
- */
-define('P_FSEP', "\x1a1");	// Field Separator
-
-/**
- * Defines the section separation string for polarized data
- *
- * @access private
- */
-define('P_SSEP', "\x1a3");	// Section Separator
-
-/**
- * Needed for sanitizing data
- *
- * @access private
- */
-require_once('sanitize.php');
-
-/**
- * Needed for desanitizing data
- *
- * @access private
- */
-require_once('desanitize.php');
-
-/**
  * The Polarizer class takes an array and decomposes its key=>value pairs into a serialized key string and a serialized value string. It also recombines said strings into the original array.
  */
 class Polarizer {
+	
+	/**
+ 	* Defines the delimeter character used to sanitize and separate polarized data
+ 	*
+ 	* @access private
+ 	*/
+	const P_DLM = "\x1a";	// ASCII 26
+
+	/**
+	 * Defines the string that causes vulnerability issues
+	 *
+	 * @access private
+	 */
+	const P_VUL = "\x2a\x2f";	// Refers to multi-line comment */
+	
+	/**
+	 * Defines the substitution string for the delimeter character
+	 *
+	 * @access private
+	 */
+	const P_SUB = "\x1a0";	// Substitute for ASCII char 26
+	
+	/**
+	 * Defines the substitution string for sanitizing polarized data
+	 *
+	 * @access private
+	 */
+	const P_HAZ = "\x1a2";	// Substitute for multi-line
+	
+	/**
+	 * Defines the field separation string for polarized data
+	 *
+	 * @access private
+	 */
+	const P_FSEP = "\x1a1";	// Field Separator
+	
+	/**
+	 * Defines the section separation string for polarized data
+	 *
+	 * @access private
+	 */
+	const P_SSEP = "\x1a3";	// Section Separator
+		
 	/**
      * A private variable that holds the array
      *
@@ -105,8 +92,8 @@ class Polarizer {
 			$this->keys = '';
 			$this->values = '';
 			foreach($keys as $k => $v){
-				$this->keys .= sanitize(serialize($k)) . P_FSEP;
-				$this->values .= sanitize(serialize($v)) . P_FSEP;
+				$this->keys .= self::sanitize(serialize($k)) .self::P_FSEP;
+				$this->values .= self::sanitize(serialize($v)) . self::P_FSEP;
 			}
 		// Join two polarized strings
 		}else{
@@ -114,16 +101,16 @@ class Polarizer {
 			$this->values = $values;
 			$limit = '0';
 			$output = ':{';
-			while(false !== $temp = strpos($keys, P_FSEP)){
+			while(false !== $temp = strpos($keys, self::P_FSEP)){
 				$limit = bcadd($limit, '1');
 				$output .= substr($keys, 0, $temp);
 				$keys = substr($keys, $temp + 2);
-				$temp = strpos($values, P_FSEP);
+				$temp = strpos($values, self::P_FSEP);
 				$output .= substr($values, 0, $temp);
 				$values = substr($values, $temp + 2);
 			}
 			$output .= '}';
-			if(false === $this->arr = unserialize(desanitize('a:' . $limit . $output))){
+			if(false === $this->arr = unserialize(self::desanitize('a:' . $limit . $output))){
 				$this->arr = false;
 				$this->keys = false;
 				$this->values = false;
@@ -157,5 +144,27 @@ class Polarizer {
 	function getArr(){
 		return $this->arr;
 	}
+
+	/**
+ 	* A function that sanitizes data
+ 	*
+ 	* @param string $entry the data to be sanitized
+ 	* @return string sanitized data
+ 	*/
+	public static function sanitize($entry){
+		return preg_replace(array('/\\x1a/', '/\\x2a\\x2f/'), array(self::P_SUB, self::P_HAZ), $entry);
+	}
+
+	/**
+	 * A function that desanitizes data
+	 *
+	 * @param string $entry the data to be desanitized
+	 * @return string desanitized data
+	 */
+	
+	public static function desanitize($entry){	
+		return preg_replace(array('/\\x1a2/', '/\\x1a0/'), array(self::P_VUL, self::P_DLM), $entry);
+	}
+
 }
 ?>

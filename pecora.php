@@ -159,15 +159,15 @@ class Pecora{
 		if(false === $tableStruct = file_get_contents($this->struct))
 			return !trigger_error('[' . basename(__FILE__) . '] &lt; ' . __LINE__ . ' &gt;', E_USER_WARNING);
 		$tableStruct = substr($tableStruct, 8, -4);
-		$tableStruct = explode(P_SSEP, $tableStruct);
-		$tableStruct[0] = explode(P_FSEP, substr($tableStruct[0], 0, -2));
+		$tableStruct = explode(Polarizer::P_SSEP, $tableStruct);
+		$tableStruct[0] = explode(Polarizer::P_FSEP, substr($tableStruct[0], 0, -2));
 		
-		$tableStruct[1] = desanitize($tableStruct[1]);
-		$tableStruct[2] = desanitize($tableStruct[2]);
+		$tableStruct[1] = Polarizer::desanitize($tableStruct[1]);
+		$tableStruct[2] = Polarizer::desanitize($tableStruct[2]);
 
 		$ret = array();
 		if($preg){
-			$tableStruct[0] = array_map('desanitize', $tableStruct[0]);
+			$tableStruct[0] = array_map(array('Polarizer','desanitize'), $tableStruct[0]);
 			$tableStruct[0] = array_map('unserialize', $tableStruct[0]);
 			$tableStruct[1] = unpack('N*', $tableStruct[1]);
 			$tableStruct[2] = unpack('N*', $tableStruct[2]);
@@ -184,7 +184,7 @@ class Pecora{
 			}
 		}else{
 			foreach ($search as $find) {
-				$key = sanitize(serialize($find));
+				$key = Polarizer::sanitize(serialize($find));
 				if(false !== $key = array_search($key, $tableStruct[0])){
 					$key *= 4;
 					if(false === $values = $this->file_cull_contents($this->table, reset(unpack('N', $tableStruct[1][$key] . $tableStruct[1][$key + 1] . $tableStruct[1][$key + 2] . $tableStruct[1][$key + 3])), reset(unpack('N', $tableStruct[2][$key] . $tableStruct[2][$key + 1] . $tableStruct[2][$key + 2] . $tableStruct[2][$key + 3]))))
@@ -213,14 +213,14 @@ class Pecora{
 		if(false === $rows = file_get_contents($this->table))
 			return !trigger_error('[' . basename(__FILE__) . '] &lt; ' . __LINE__ . ' &gt;', E_USER_WARNING);
 
-		$tableStruct = explode(P_SSEP, $tableStruct);
+		$tableStruct = explode(Polarizer::P_SSEP, $tableStruct);
 		$columns = $tableStruct[3];
-		$tableStruct[0] = explode(P_FSEP, substr($tableStruct[0], 0, -2));
+		$tableStruct[0] = explode(Polarizer::P_FSEP, substr($tableStruct[0], 0, -2));
 		
-		$tableStruct[0] = array_map('desanitize', $tableStruct[0]);
+		$tableStruct[0] = array_map(array('Polarizer','desanitize'), $tableStruct[0]);
 		$tableStruct[0] = array_map('unserialize', $tableStruct[0]);
-		$tableStruct[1] = unpack('N*', desanitize($tableStruct[1]));
-		$tableStruct[2] = unpack('N*', desanitize($tableStruct[2]));
+		$tableStruct[1] = unpack('N*', Polarizer::desanitize($tableStruct[1]));
+		$tableStruct[2] = unpack('N*', Polarizer::desanitize($tableStruct[2]));
 
 		$modStruct = array();
 		foreach($tableStruct[0] as $key => $value){
@@ -245,7 +245,7 @@ class Pecora{
 		$tableStruct = substr($tableStruct, 8, -4);
 		$tableStruct = explode(P_SSEP, $tableStruct);
 		
-		$tableStruct[4] = unpack('N*', desanitize($tableStruct[4]));
+		$tableStruct[4] = unpack('N*', Polarizer::desanitize($tableStruct[4]));
 		
 		return array(
 			'history' => $tableStruct[4][2] + $tableStruct[4][3], 
@@ -290,26 +290,26 @@ class Pecora{
 			
 			$structOut = strlen($tableOut);
 	
-			$structOut = sanitize(serialize($offset)) . P_FSEP . P_SSEP . "\x00\x00\x00\x08" . P_SSEP . sanitize(pack('N', $structOut & M_PMASK)) . P_SSEP . $length . P_SSEP . sanitize(pack('N*', (8 + $structOut) & M_PMASK)) . "\x00\x00\x00\x01\x00\x00\x00\x00";
+			$structOut = Polarizer::sanitize(serialize($offset)) . Polarizer::P_FSEP . Polarizer::P_SSEP . "\x00\x00\x00\x08" . P_SSEP . Polarizer::sanitize(pack('N', $structOut & M_PMASK)) . P_SSEP . $length . P_SSEP . Polarizer::sanitize(pack('N*', (8 + $structOut) & M_PMASK)) . "\x00\x00\x00\x01\x00\x00\x00\x00";
 			unset($data[$offset]);
 		}
 
-		$structOut = explode(P_SSEP, $structOut);
-		$structOut[0] = explode(P_FSEP, substr($structOut[0], 0, -2));
+		$structOut = explode(Polarizer::P_SSEP, $structOut);
+		$structOut[0] = explode(Polarizer::P_FSEP, substr($structOut[0], 0, -2));
 		
-		$structOut[1] = desanitize($structOut[1]);
-		$structOut[2] = desanitize($structOut[2]);
+		$structOut[1] = Polarizer::desanitize($structOut[1]);
+		$structOut[2] = Polarizer::desanitize($structOut[2]);
 		
-		$structOut[4] = unpack('N*', desanitize($structOut[4]));
+		$structOut[4] = unpack('N*', Polarizer::desanitize($structOut[4]));
 		
 		foreach($data as $rowLabel => $rowData){
 			// Parameters still to be checked
 			if(!is_array($rowData) || empty($rowData))
 				return !trigger_error('[' . basename(__FILE__) . '] &lt; ' . __LINE__ . ' &gt;', E_USER_WARNING);
 			
-			$rowLabel = sanitize(serialize($rowLabel));
+			$rowLabel = Polarizer::sanitize(serialize($rowLabel));
 			$polarizer = new Polarizer($rowData);
-			$polarizer = $polarizer->getValues() . P_SSEP;
+			$polarizer = $polarizer->getValues() . Polarizer::P_SSEP;
 			$length = strlen($polarizer);
 			
 			if(false !== $key = array_search($rowLabel, $structOut[0])){
@@ -334,13 +334,13 @@ class Pecora{
 			$tableOut .= $polarizer;
 		}
 		
-		$structOut[0] = implode(P_FSEP, $structOut[0]) . P_FSEP;
+		$structOut[0] = implode(Polarizer::P_FSEP, $structOut[0]) . Polarizer::P_FSEP;
 		
-		$structOut[1] = sanitize($structOut[1]);
-		$structOut[2] = sanitize($structOut[2]);
-		$structOut[4] = sanitize(pack('N*', $structOut[4][1] & M_PMASK, $structOut[4][2] & M_PMASK, $structOut[4][3] & M_PMASK));
+		$structOut[1] = Polarizer::sanitize($structOut[1]);
+		$structOut[2] = Polarizer::sanitize($structOut[2]);
+		$structOut[4] = Polarizer::sanitize(pack('N*', $structOut[4][1] & M_PMASK, $structOut[4][2] & M_PMASK, $structOut[4][3] & M_PMASK));
 
-		$structOut = '<?php /*' . implode(P_SSEP, $structOut) . '*/?>';
+		$structOut = '<?php /*' . implode(Polarizer::P_SSEP, $structOut) . '*/?>';
 
 		if(false === $this->file_place_contents($this->struct, $structOut))
 			return !trigger_error('[' . basename(__FILE__) . '] &lt; ' . __LINE__ . ' &gt;', E_USER_WARNING);
@@ -392,15 +392,15 @@ class Pecora{
 		if(false === $tableStruct = file_get_contents($this->struct))
 			return !trigger_error('[' . basename(__FILE__) . '] &lt; ' . __LINE__ . ' &gt;', E_USER_WARNING);
 		$tableStruct = substr($tableStruct, 8, -4);
-		$tableStruct = explode(P_SSEP, $tableStruct);
-		$tableStruct[0] = explode(P_FSEP, substr($tableStruct[0], 0, -2));
-		$tableStruct[1] = desanitize($tableStruct[1]);
-		$tableStruct[2] = desanitize($tableStruct[2]);
-		$tableStruct[4] = unpack('N*', desanitize($tableStruct[4]));
+		$tableStruct = explode(Polarizer::P_SSEP, $tableStruct);
+		$tableStruct[0] = explode(Polarizer::P_FSEP, substr($tableStruct[0], 0, -2));
+		$tableStruct[1] = Polarizer::desanitize($tableStruct[1]);
+		$tableStruct[2] = Polarizer::desanitize($tableStruct[2]);
+		$tableStruct[4] = unpack('N*', Polarizer::desanitize($tableStruct[4]));
 		
 		if($preg){
 			foreach($tableStruct[0] as $key => $value){
-				if(preg_match($search, unserialize(desanitize($value)))){
+				if(preg_match($search, unserialize(Polarizer::desanitize($value)))){
 					unset($tableStruct[0][$key]);
 					$key *= 4;
 					$tableStruct[1] = substr_replace($tableStruct[1], '', $key, 4);
@@ -411,7 +411,7 @@ class Pecora{
 			}
 		}else{
 			foreach ($search as $row) {
-				$key = sanitize(serialize($row));
+				$key = Polarizer::sanitize(serialize($row));
 				if(false !== $key = array_search($key, $tableStruct[0])){
 					unset($tableStruct[0][$key]);
 					$key *= 4;
@@ -427,12 +427,12 @@ class Pecora{
 			if(!unlink($this->table) || !unlink($this->struct))
 				return !trigger_error('[' . basename(__FILE__) . '] &lt; ' . __LINE__ . ' &gt;', E_USER_WARNING);
 		}else{
-			$tableStruct[0] = implode(P_FSEP, $tableStruct[0]) . P_FSEP;
-			$tableStruct[1] = sanitize($tableStruct[1]);
-			$tableStruct[2] = sanitize($tableStruct[2]);
-			$tableStruct[4] = sanitize(pack('N*', $tableStruct[4][1] & M_PMASK, $tableStruct[4][2] & M_PMASK, $tableStruct[4][3] & M_PMASK));
+			$tableStruct[0] = implode(Polarizer::P_FSEP, $tableStruct[0]) . Polarizer::P_FSEP;
+			$tableStruct[1] = Polarizer::sanitize($tableStruct[1]);
+			$tableStruct[2] = Polarizer::sanitize($tableStruct[2]);
+			$tableStruct[4] = Polarizer::sanitize(pack('N*', $tableStruct[4][1] & M_PMASK, $tableStruct[4][2] & M_PMASK, $tableStruct[4][3] & M_PMASK));
 			
-			$tableStruct = '<?php /*' . implode(P_SSEP, $tableStruct) . '*/?>';
+			$tableStruct = '<?php /*' . implode(Polarizer::P_SSEP, $tableStruct) . '*/?>';
 
 			if(false === $this->file_place_contents($this->struct, $tableStruct))
 				return !trigger_error('[' . basename(__FILE__) . '] &lt; ' . __LINE__ . ' &gt;', E_USER_WARNING);
@@ -461,10 +461,10 @@ class Pecora{
 		if(false === $tableStruct = file_get_contents($this->struct))
 			return !trigger_error('[' . basename(__FILE__) . '] &lt; ' . __LINE__ . ' &gt;', E_USER_WARNING);
 		$tableStruct = substr($tableStruct, 8, -4);
-		$tableStruct = explode(P_SSEP, $tableStruct);
-		$tableStruct[1] = unpack('N*', desanitize($tableStruct[1]));
-		$tableStruct[2] = unpack('N*', desanitize($tableStruct[2]));
-		$tableStruct[4] = unpack('N*', desanitize($tableStruct[4]));
+		$tableStruct = explode(Polarizer::P_SSEP, $tableStruct);
+		$tableStruct[1] = unpack('N*', Polarizer::desanitize($tableStruct[1]));
+		$tableStruct[2] = unpack('N*', Polarizer::desanitize($tableStruct[2]));
+		$tableStruct[4] = unpack('N*', Polarizer::desanitize($tableStruct[4]));
 		
 		$tableOut = '<?php /*';
 		
@@ -478,12 +478,12 @@ class Pecora{
 		
 		$tableOut .= '*/?>';
 		
-		$tableStruct[1] = sanitize(implode('', $tableStruct[1]));
-		$tableStruct[2] = sanitize(implode('', $tableStruct[2]));
+		$tableStruct[1] = Polarizer::sanitize(implode('', $tableStruct[1]));
+		$tableStruct[2] = Polarizer::sanitize(implode('', $tableStruct[2]));
 		
-		$tableStruct[4] = sanitize(pack('N*', $offset & M_PMASK, $tableStruct[4][2] & M_PMASK) . "\x00\x00\x00\x00");
+		$tableStruct[4] = Polarizer::sanitize(pack('N*', $offset & M_PMASK, $tableStruct[4][2] & M_PMASK) . "\x00\x00\x00\x00");
 		
-		$tableStruct = '<?php /*' . implode(P_SSEP, $tableStruct) . '*/?>';
+		$tableStruct = '<?php /*' . implode(Polarizer::P_SSEP, $tableStruct) . '*/?>';
 		
 		if(false === $this->file_place_contents($this->struct, $tableStruct))
 			return !trigger_error('[' . basename(__FILE__) . '] &lt; ' . __LINE__ . ' &gt;', E_USER_WARNING);
