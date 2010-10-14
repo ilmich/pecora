@@ -9,14 +9,6 @@
 error_reporting(E_ALL);
 
 /**
- * An AND mask used to manipulate binary data
- *
- * @access private
- */
-
-define('M_PMASK', 0x7fffffff);
-
-/**
  * Class required to split arrays into keys and values for storage into database
  *
  * @access private
@@ -37,6 +29,15 @@ require_once('mutex.php');
  */
 
 class Pecora{
+	
+	/**
+	 * An AND mask used to manipulate binary data
+ 	*
+ 	* @access private
+ 	*/
+
+	const M_PMASK = 0x7fffffff;
+	
 	/**
      * URI of a table
      *
@@ -138,17 +139,17 @@ class Pecora{
 	 * @param boolean $preg whether to use parameter $search as a regular expression or a case-sensitive string
 	 * @return array table row(s) on success or FALSE on failure
 	 */
-	function getRow($search, $preg = true){
+	public function getRow($search, $preg = true){
 		// Parameters
 		if(!is_bool($preg)) $preg = false;
 		
 		if ($preg) {
 			if (!is_string($search)) {
-				return !trigger_error('[' . basename(__FILE__) . '] &lt; ' . __LINE__ . ' &gt;', E_USER_WARNING);
+				throw new Exception("Regular expression must be a string");
 			}			
 		}else {
 			if(!is_string($search) && !is_int($search) && !is_array($search))
-				return !trigger_error('[' . basename(__FILE__) . '] &lt; ' . __LINE__ . ' &gt;', E_USER_WARNING);
+				throw new Exception("Not valid search keys, ".gettype($search)." passed");
 
 			if (!is_array($search)) {
 				$search = array($search);
@@ -156,8 +157,9 @@ class Pecora{
 		}		
 		
 		// Code
-		if(false === $tableStruct = file_get_contents($this->struct))
-			return !trigger_error('[' . basename(__FILE__) . '] &lt; ' . __LINE__ . ' &gt;', E_USER_WARNING);
+		if(false === $tableStruct = @file_get_contents($this->struct))
+			return !trigger_error('Struct file '.$this->struct(true).' not found or not readable', E_USER_WARNING);
+			
 		$tableStruct = substr($tableStruct, 8, -4);
 		$tableStruct = explode(Polarizer::P_SSEP, $tableStruct);
 		$tableStruct[0] = explode(Polarizer::P_FSEP, substr($tableStruct[0], 0, -2));
@@ -175,10 +177,10 @@ class Pecora{
 				$key++;
 				if(preg_match($search, $rowLabel)){
 					if(false === $values = $this->file_cull_contents($this->table, $tableStruct[1][$key], $tableStruct[2][$key]))
-						return !trigger_error('[' . basename(__FILE__) . '] &lt; ' . __LINE__ . ' &gt;', E_USER_WARNING);
+						throw new Exception("Unable to load row ".$rowLabel." at offset ".$tableStruct[1][$key]." with lenght ".$tableStruct[2][$key]);
 					$polarizer = new Polarizer($tableStruct[3], substr($values, 0, -2));
 					if(false === $polarizer = $polarizer->getArr())
-						return !trigger_error('[' . basename(__FILE__) . '] &lt; ' . __LINE__ . ' &gt;', E_USER_WARNING);
+						throw new Exception("Unable to deserialize row ".$rowLabel);
 					$ret[$rowLabel] = $polarizer;
 				}
 			}
@@ -188,15 +190,19 @@ class Pecora{
 				if(false !== $key = array_search($key, $tableStruct[0])){
 					$key *= 4;
 					if(false === $values = $this->file_cull_contents($this->table, reset(unpack('N', $tableStruct[1][$key] . $tableStruct[1][$key + 1] . $tableStruct[1][$key + 2] . $tableStruct[1][$key + 3])), reset(unpack('N', $tableStruct[2][$key] . $tableStruct[2][$key + 1] . $tableStruct[2][$key + 2] . $tableStruct[2][$key + 3]))))
-						return !trigger_error('[' . basename(__FILE__) . '] &lt; ' . __LINE__ . ' &gt;', E_USER_WARNING);
+						throw new Exception("Unable to load row ".$rowLabel." at offset ".reset(unpack('N', $tableStruct[1][$key] . $tableStruct[1][$key + 1] . $tableStruct[1][$key + 2] . $tableStruct[1][$key + 3]))
+																			." with lenght ".reset(unpack('N', $tableStruct[2][$key] . $tableStruct[2][$key + 1] . $tableStruct[2][$key + 2] . $tableStruct[2][$key + 3])));
 					$polarizer = new Polarizer($tableStruct[3], substr($values, 0, -2));
 					if(false === $polarizer = $polarizer->getArr())
-						return !trigger_error('[' . basename(__FILE__) . '] &lt; ' . __LINE__ . ' &gt;', E_USER_WARNING);
+						throw new Exception("Unable to deserialize row ".$rowLabel);
 					$ret[$find] = $polarizer;
 				}
 			}
 		}
-		if(empty($ret)) return false;
+		
+		if(empty($ret)) 
+			return false;
+			
 		return $ret;
 	}
 	
@@ -205,13 +211,13 @@ class Pecora{
 	 *
 	 * @return array an array of tabular rows or FALSE on failure
 	 */
-	function query(){
+	public function query(){
 		// Code
 		if(false === $tableStruct = file_get_contents($this->struct))
-			return !trigger_error('[' . basename(__FILE__) . '] &lt; ' . __LINE__ . ' &gt;', E_USER_WARNING);
+			return !trigger_error('Struct file '.$this->struct(true).' not found or not readable', E_USER_WARNING);
 		$tableStruct = substr($tableStruct, 8, -4);
 		if(false === $rows = file_get_contents($this->table))
-			return !trigger_error('[' . basename(__FILE__) . '] &lt; ' . __LINE__ . ' &gt;', E_USER_WARNING);
+			return !trigger_error('Table file '.$this->table(true).' not found or not readable', E_USER_WARNING);
 
 		$tableStruct = explode(Polarizer::P_SSEP, $tableStruct);
 		$columns = $tableStruct[3];
@@ -227,7 +233,7 @@ class Pecora{
 			$key++;
 			$polarizer = new Polarizer($tableStruct[3], substr($rows, $tableStruct[1][$key], $tableStruct[2][$key]));
 			if(false === $polarizer = $polarizer->getArr())
-				return !trigger_error('[' . basename(__FILE__) . '] &lt; ' . __LINE__ . ' &gt;', E_USER_WARNING);
+				throw new Exception("Unable to deserialize row ".$value);
 			$modStruct[$value] = $polarizer;
 		}
 		return $modStruct;
@@ -238,10 +244,10 @@ class Pecora{
 	 *
 	 * @return array an array whose first value is the historical count and the second value is the unique count
 	 */
-	function entries(){
+	public function entries(){
 		// Code		
 		if(false === $tableStruct = file_get_contents($this->struct))
-			return !trigger_error('[' . basename(__FILE__) . '] &lt; ' . __LINE__ . ' &gt;', E_USER_WARNING);
+			return !trigger_error('Struct file '.$this->struct(true).' not found or not readable', E_USER_WARNING);
 		$tableStruct = substr($tableStruct, 8, -4);
 		$tableStruct = explode(P_SSEP, $tableStruct);
 		
@@ -261,16 +267,16 @@ class Pecora{
 	 * @param boolean $atomic whether or not file modifications should be atomic
 	 * @return boolean TRUE on success FALSE on failure
 	 */
-	function insertRow($data, $atomic = true){
+	public function insertRow($data, $atomic = true){
 		// Parameters
 		if(!is_array($data) || empty($data))
-			return !trigger_error('[' . basename(__FILE__) . '] &lt; ' . __LINE__ . ' &gt;', E_USER_WARNING);
+			throw new Exception("Invalid or empty data");
 		if(!is_bool($atomic)) $atomic = true;
 
 		// Atomicity
 		if($atomic)
 			if(!is_object($this->mutex))
-				return !trigger_error('[' . basename(__FILE__) . '] &lt; ' . __LINE__ . ' &gt;', E_USER_WARNING);
+				throw new Exception("Lock not yet acquired");
 
 		// Code
 		$structOut = null;
@@ -285,12 +291,12 @@ class Pecora{
 			$offset = key($data);
 	
 			$length = new Polarizer($length);
-			$tableOut .= $length->getValues() . P_SSEP;
+			$tableOut .= $length->getValues() . Polarizer::P_SSEP;
 			$length = $length->getKeys();
 			
 			$structOut = strlen($tableOut);
 	
-			$structOut = Polarizer::sanitize(serialize($offset)) . Polarizer::P_FSEP . Polarizer::P_SSEP . "\x00\x00\x00\x08" . P_SSEP . Polarizer::sanitize(pack('N', $structOut & M_PMASK)) . P_SSEP . $length . P_SSEP . Polarizer::sanitize(pack('N*', (8 + $structOut) & M_PMASK)) . "\x00\x00\x00\x01\x00\x00\x00\x00";
+			$structOut = Polarizer::sanitize(serialize($offset)) . Polarizer::P_FSEP . Polarizer::P_SSEP . "\x00\x00\x00\x08" . Polarizer::P_SSEP . Polarizer::sanitize(pack('N', $structOut & self::M_PMASK)) . Polarizer::P_SSEP . $length . Polarizer::P_SSEP . Polarizer::sanitize(pack('N*', (8 + $structOut) & self::M_PMASK)) . "\x00\x00\x00\x01\x00\x00\x00\x00";
 			unset($data[$offset]);
 		}
 
@@ -305,7 +311,7 @@ class Pecora{
 		foreach($data as $rowLabel => $rowData){
 			// Parameters still to be checked
 			if(!is_array($rowData) || empty($rowData))
-				return !trigger_error('[' . basename(__FILE__) . '] &lt; ' . __LINE__ . ' &gt;', E_USER_WARNING);
+				throw new Exception("Invalid or empty data");
 			
 			$rowLabel = Polarizer::sanitize(serialize($rowLabel));
 			$polarizer = new Polarizer($rowData);
@@ -320,12 +326,12 @@ class Pecora{
 				$structOut[0][] = $rowLabel;
 			}
 			$key *= 4;
-			$temp = pack('N', $structOut[4][1] & M_PMASK);
+			$temp = pack('N', $structOut[4][1] & self::M_PMASK);
 			$structOut[1][$key] = $temp[0];
 			$structOut[1][$key + 1] = $temp[1];
 			$structOut[1][$key + 2] = $temp[2];
 			$structOut[1][$key + 3] = $temp[3];
-			$temp = pack('N', $length & M_PMASK);
+			$temp = pack('N', $length & self::M_PMASK);
 			$structOut[2][$key] = $temp[0];
 			$structOut[2][$key + 1] = $temp[1];
 			$structOut[2][$key + 2] = $temp[2];
@@ -338,19 +344,19 @@ class Pecora{
 		
 		$structOut[1] = Polarizer::sanitize($structOut[1]);
 		$structOut[2] = Polarizer::sanitize($structOut[2]);
-		$structOut[4] = Polarizer::sanitize(pack('N*', $structOut[4][1] & M_PMASK, $structOut[4][2] & M_PMASK, $structOut[4][3] & M_PMASK));
+		$structOut[4] = Polarizer::sanitize(pack('N*', $structOut[4][1] & self::M_PMASK, $structOut[4][2] & self::M_PMASK, $structOut[4][3] & self::M_PMASK));
 
 		$structOut = '<?php /*' . implode(Polarizer::P_SSEP, $structOut) . '*/?>';
 
 		if(false === $this->file_place_contents($this->struct, $structOut))
-			return !trigger_error('[' . basename(__FILE__) . '] &lt; ' . __LINE__ . ' &gt;', E_USER_WARNING);
+			throw new Exception('Unable to write struct file');
 
 		$tableOut .= '*/?>';
 
 		if(false === $this->file_cull_contents($this->table, -4, null, SEEK_END, $tableOut)){
 			$tableOut = '<?php /*' . $tableOut;
 			if(false === $this->file_place_contents($this->table, $tableOut))
-				return !trigger_error('[' . basename(__FILE__) . '] &lt; ' . __LINE__ . ' &gt;', E_USER_WARNING);
+				throw new Exception('Unable to write table file');
 		}
 
 		return true;
@@ -364,17 +370,17 @@ class Pecora{
 	 * @param boolean $atomic whether or not file modifications should be atomic
 	 * @return boolean TRUE on success FALSE on failure
 	 */
-	function deleteRow($search, $preg = true, $atomic = true){
+	public function deleteRow($search, $preg = true, $atomic = true){
 		// Parameters
 		if(!is_bool($preg)) $preg = false;		
 		
 		if ($preg) {
 			if (!is_string($search)) {
-				return !trigger_error('[' . basename(__FILE__) . '] &lt; ' . __LINE__ . ' &gt;', E_USER_WARNING);
+				throw new Exception("Regular expression must be a string");
 			}			
 		}else {
 			if(!is_string($search) && !is_int($search) && !is_array($search))
-				return !trigger_error('[' . basename(__FILE__) . '] &lt; ' . __LINE__ . ' &gt;', E_USER_WARNING);
+				throw new Exception("Not valid search keys, ".gettype($search)." passed");
 
 			if (!is_array($search)) {
 				$search = array($search);
@@ -386,11 +392,11 @@ class Pecora{
 		// Atomicity
 		if($atomic)
 			if(!is_object($this->mutex))
-				return !trigger_error('[' . basename(__FILE__) . '] &lt; ' . __LINE__ . ' &gt;', E_USER_WARNING);
+				throw new Exception("Lock not yet acquired");
 
 		// Code
 		if(false === $tableStruct = file_get_contents($this->struct))
-			return !trigger_error('[' . basename(__FILE__) . '] &lt; ' . __LINE__ . ' &gt;', E_USER_WARNING);
+			return !trigger_error('Struct file '.$this->struct(true).' not found or not readable', E_USER_WARNING);
 		$tableStruct = substr($tableStruct, 8, -4);
 		$tableStruct = explode(Polarizer::P_SSEP, $tableStruct);
 		$tableStruct[0] = explode(Polarizer::P_FSEP, substr($tableStruct[0], 0, -2));
@@ -425,17 +431,17 @@ class Pecora{
 
 		if(empty($tableStruct[0])){
 			if(!unlink($this->table) || !unlink($this->struct))
-				return !trigger_error('[' . basename(__FILE__) . '] &lt; ' . __LINE__ . ' &gt;', E_USER_WARNING);
+				return !trigger_error('Unable to delete empty struct file '.$this->struct(true), E_USER_WARNING);
 		}else{
 			$tableStruct[0] = implode(Polarizer::P_FSEP, $tableStruct[0]) . Polarizer::P_FSEP;
 			$tableStruct[1] = Polarizer::sanitize($tableStruct[1]);
 			$tableStruct[2] = Polarizer::sanitize($tableStruct[2]);
-			$tableStruct[4] = Polarizer::sanitize(pack('N*', $tableStruct[4][1] & M_PMASK, $tableStruct[4][2] & M_PMASK, $tableStruct[4][3] & M_PMASK));
+			$tableStruct[4] = Polarizer::sanitize(pack('N*', $tableStruct[4][1] & self::M_PMASK, $tableStruct[4][2] & self::M_PMASK, $tableStruct[4][3] & self::M_PMASK));
 			
 			$tableStruct = '<?php /*' . implode(Polarizer::P_SSEP, $tableStruct) . '*/?>';
 
 			if(false === $this->file_place_contents($this->struct, $tableStruct))
-				return !trigger_error('[' . basename(__FILE__) . '] &lt; ' . __LINE__ . ' &gt;', E_USER_WARNING);
+				throw new Exception('Unable to write struct file');
 		}
 		return true;
 	}
@@ -446,20 +452,20 @@ class Pecora{
 	 * @param boolean $atomic whether or not file modifications should be atomic
 	 * @return boolean TRUE on success FALSE on failure
 	 */
-	function refresh($atomic = true){
+	public function refresh($atomic = true){
 		// Parameters
 		if(!is_bool($atomic)) $atomic = true;
 
 		// Atomicity
 		if($atomic)
 			if(!is_object($this->mutex))
-				return !trigger_error('[' . basename(__FILE__) . '] &lt; ' . __LINE__ . ' &gt;', E_USER_WARNING);
+				throw new Exception("Lock not yet acquired");
 
 		// Code
 		if(false === $rows = file_get_contents($this->table))
-			return !trigger_error('[' . basename(__FILE__) . '] &lt; ' . __LINE__ . ' &gt;', E_USER_WARNING);
+			return !trigger_error('Table file '.$this->table(true).' not found or not readable', E_USER_WARNING);
 		if(false === $tableStruct = file_get_contents($this->struct))
-			return !trigger_error('[' . basename(__FILE__) . '] &lt; ' . __LINE__ . ' &gt;', E_USER_WARNING);
+			return !trigger_error('Struct file '.$this->struct(true).' not found or not readable', E_USER_WARNING);
 		$tableStruct = substr($tableStruct, 8, -4);
 		$tableStruct = explode(Polarizer::P_SSEP, $tableStruct);
 		$tableStruct[1] = unpack('N*', Polarizer::desanitize($tableStruct[1]));
@@ -471,8 +477,8 @@ class Pecora{
 		$offset = 8;
 		foreach($tableStruct[2] as $key => $value){
 			$tableOut .= substr($rows, $tableStruct[1][$key], $value);
-			$tableStruct[1][$key] = pack('N', $offset & M_PMASK);
-			$tableStruct[2][$key] = pack('N', $value & M_PMASK);
+			$tableStruct[1][$key] = pack('N', $offset & self::M_PMASK);
+			$tableStruct[2][$key] = pack('N', $value & self::M_PMASK);
 			$offset += $value;
 		}
 		
@@ -481,14 +487,14 @@ class Pecora{
 		$tableStruct[1] = Polarizer::sanitize(implode('', $tableStruct[1]));
 		$tableStruct[2] = Polarizer::sanitize(implode('', $tableStruct[2]));
 		
-		$tableStruct[4] = Polarizer::sanitize(pack('N*', $offset & M_PMASK, $tableStruct[4][2] & M_PMASK) . "\x00\x00\x00\x00");
+		$tableStruct[4] = Polarizer::sanitize(pack('N*', $offset & self::M_PMASK, $tableStruct[4][2] & self::M_PMASK) . "\x00\x00\x00\x00");
 		
 		$tableStruct = '<?php /*' . implode(Polarizer::P_SSEP, $tableStruct) . '*/?>';
 		
 		if(false === $this->file_place_contents($this->struct, $tableStruct))
-			return !trigger_error('[' . basename(__FILE__) . '] &lt; ' . __LINE__ . ' &gt;', E_USER_WARNING);
+			throw new Exception('Unable to write struct file');
 		if(false === $this->file_place_contents($this->table, $tableOut))
-			return !trigger_error('[' . basename(__FILE__) . '] &lt; ' . __LINE__ . ' &gt;', E_USER_WARNING);
+			throw new Exception('Unable to write table file');
 
 		return true;
 	}

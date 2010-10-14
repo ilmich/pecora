@@ -85,7 +85,7 @@ class Polarizer {
 	 * @param mixed $keys array or serialized key(s)
 	 * @param string $values serialized value(s)
 	 */
-	function Polarizer($keys, $values = null){
+	public function __construct($keys, $values = null){
 		// Split the array into polarized strings
 		if(is_array($keys)){
 			$this->arr = $keys;
@@ -123,7 +123,7 @@ class Polarizer {
 	 *
 	 * @return string serialized key(s) or FALSE on failure
 	 */
-	function getKeys(){
+	public function getKeys(){
 		return $this->keys;
 	}
 
@@ -132,7 +132,7 @@ class Polarizer {
 	 *
 	 * @return string serialized value(s) or FALSE on failure
 	 */
-	function getValues(){
+	public function getValues(){
 		return $this->values;
 	}
 
@@ -141,7 +141,7 @@ class Polarizer {
 	 *
 	 * @return array array or FALSE on failure
 	 */
-	function getArr(){
+	public function getArr(){
 		return $this->arr;
 	}
 
