@@ -33,22 +33,6 @@ require_once('polarizer.php');
 require_once('mutex.php');
 
 /**
- * Function required for file writing
- *
- * @access private
- */
-
-require_once('file_place_contents.php');
-
-/**
- * Function required for file writing/reading
- *
- * @access private
- */
-
-require_once('file_cull_contents.php');
-
-/**
  * The Pecora class contains all the methods necessary for manipulation of the flat file database.
  */
 
@@ -84,8 +68,8 @@ class Pecora{
 	 * @param string $table the name of the table
 	 * @param string $struct the name of the structural file
 	 */
-	function Pecora($cwd, $table, $struct){
-		$this->struct = $cwd . DIRECTORY_SEPARATOR . $struct . '.php';
+	public function __construct($cwd, $table){
+		$this->struct = $cwd . DIRECTORY_SEPARATOR . $table . '_ts.php';
 		$this->table = $cwd . DIRECTORY_SEPARATOR . $table . '.php';
 	}
 
@@ -95,8 +79,10 @@ class Pecora{
 	 * @param boolean $path return table path or just the table name (name returned by default)
 	 * @return string
 	 */
-	function table($path = null){
-		if(isset($path)) return $this->table;
+	public function table($path = null){
+		if(isset($path)) 
+			return $this->table;
+		
 		return substr(basename($this->table), 0, -4);
 	}
 
@@ -106,8 +92,10 @@ class Pecora{
 	 * @param boolean $path return structure path or just the structure name (name returned by default)
 	 * @return string
 	 */
-	function struct($path = null){
-		if(isset($path)) return $this->struct;
+	public function struct($path = null){
+		if(isset($path)) 
+			return $this->struct;
+		
 		return substr(basename($this->struct), 0, -4);
 	}
 
@@ -117,12 +105,12 @@ class Pecora{
 	 * @param integer $polling specifies the sleep time (seconds) for the lock to wait in order to reacquire the lock if it fails.
 	 * @return boolean TRUE on success FALSE on failure
 	 */
-	function lock($polling = 1){
+	public function lock($polling = 1){
 		// For atomicity we have to lock the table
 		$mutex = new Mutex($this->table);
 
 		if(!$mutex->acquireLock($polling))
-			return !trigger_error('[' . basename(__FILE__) . '] &lt; ' . __LINE__ . ' &gt;', E_USER_WARNING);
+			return false;
 			
 		$this->mutex = $mutex;
 
@@ -134,9 +122,9 @@ class Pecora{
 	 *
 	 * @return boolean TRUE on success FALSE on failure
 	 */
-	function release(){
+	public function release(){
 		if(!$this->mutex->releaseLock())
-			return !trigger_error('[' . basename(__FILE__) . '] &lt; ' . __LINE__ . ' &gt;', E_USER_WARNING);
+			return false;
 
 		$this->mutex = null;
 		
@@ -186,7 +174,7 @@ class Pecora{
 			foreach($tableStruct[0] as $key => $rowLabel){
 				$key++;
 				if(preg_match($search, $rowLabel)){
-					if(false === $values = file_cull_contents($this->table, $tableStruct[1][$key], $tableStruct[2][$key]))
+					if(false === $values = $this->file_cull_contents($this->table, $tableStruct[1][$key], $tableStruct[2][$key]))
 						return !trigger_error('[' . basename(__FILE__) . '] &lt; ' . __LINE__ . ' &gt;', E_USER_WARNING);
 					$polarizer = new Polarizer($tableStruct[3], substr($values, 0, -2));
 					if(false === $polarizer = $polarizer->getArr())
@@ -199,7 +187,7 @@ class Pecora{
 				$key = sanitize(serialize($find));
 				if(false !== $key = array_search($key, $tableStruct[0])){
 					$key *= 4;
-					if(false === $values = file_cull_contents($this->table, reset(unpack('N', $tableStruct[1][$key] . $tableStruct[1][$key + 1] . $tableStruct[1][$key + 2] . $tableStruct[1][$key + 3])), reset(unpack('N', $tableStruct[2][$key] . $tableStruct[2][$key + 1] . $tableStruct[2][$key + 2] . $tableStruct[2][$key + 3]))))
+					if(false === $values = $this->file_cull_contents($this->table, reset(unpack('N', $tableStruct[1][$key] . $tableStruct[1][$key + 1] . $tableStruct[1][$key + 2] . $tableStruct[1][$key + 3])), reset(unpack('N', $tableStruct[2][$key] . $tableStruct[2][$key + 1] . $tableStruct[2][$key + 2] . $tableStruct[2][$key + 3]))))
 						return !trigger_error('[' . basename(__FILE__) . '] &lt; ' . __LINE__ . ' &gt;', E_USER_WARNING);
 					$polarizer = new Polarizer($tableStruct[3], substr($values, 0, -2));
 					if(false === $polarizer = $polarizer->getArr())
@@ -354,14 +342,14 @@ class Pecora{
 
 		$structOut = '<?php /*' . implode(P_SSEP, $structOut) . '*/?>';
 
-		if(false === file_place_contents($this->struct, $structOut))
+		if(false === $this->file_place_contents($this->struct, $structOut))
 			return !trigger_error('[' . basename(__FILE__) . '] &lt; ' . __LINE__ . ' &gt;', E_USER_WARNING);
 
 		$tableOut .= '*/?>';
 
-		if(false === file_cull_contents($this->table, -4, null, SEEK_END, $tableOut)){
+		if(false === $this->file_cull_contents($this->table, -4, null, SEEK_END, $tableOut)){
 			$tableOut = '<?php /*' . $tableOut;
-			if(false === file_place_contents($this->table, $tableOut))
+			if(false === $this->file_place_contents($this->table, $tableOut))
 				return !trigger_error('[' . basename(__FILE__) . '] &lt; ' . __LINE__ . ' &gt;', E_USER_WARNING);
 		}
 
@@ -446,7 +434,7 @@ class Pecora{
 			
 			$tableStruct = '<?php /*' . implode(P_SSEP, $tableStruct) . '*/?>';
 
-			if(false === file_place_contents($this->struct, $tableStruct))
+			if(false === $this->file_place_contents($this->struct, $tableStruct))
 				return !trigger_error('[' . basename(__FILE__) . '] &lt; ' . __LINE__ . ' &gt;', E_USER_WARNING);
 		}
 		return true;
@@ -497,12 +485,61 @@ class Pecora{
 		
 		$tableStruct = '<?php /*' . implode(P_SSEP, $tableStruct) . '*/?>';
 		
-		if(false === file_place_contents($this->struct, $tableStruct))
+		if(false === $this->file_place_contents($this->struct, $tableStruct))
 			return !trigger_error('[' . basename(__FILE__) . '] &lt; ' . __LINE__ . ' &gt;', E_USER_WARNING);
-		if(false === file_place_contents($this->table, $tableOut))
+		if(false === $this->file_place_contents($this->table, $tableOut))
 			return !trigger_error('[' . basename(__FILE__) . '] &lt; ' . __LINE__ . ' &gt;', E_USER_WARNING);
 
 		return true;
 	}
+	
+	/**
+	 * A function that writes content to a file
+	 *
+	 * @param string $filename the file to be written
+	 * @param string $data the data to be written to the file
+	 * @return integer the number of bytes written or FALSE on failure
+	 */
+	private function file_place_contents($filename, $data){
+		
+		if(false === $handle = @fopen($filename, "wb")) 
+			return false;
+	
+		if(false === $bytes = @fwrite($handle, $data)) 
+			return false;
+	
+		if(!fclose($handle)) 
+			return false;
+		
+		return $bytes;
+	}
+	
+	/**
+	 * A function that reads/writes content to a file
+	 *
+	 * @param string $filename the file to be read/written
+	 * @param integer $offset the offset from where to begin the read/write operation
+	 * @param integer $bytes the number of bytes to be read
+	 * @param integer $whence the location from where to compute offset for fseek
+	 * @param string $data the data to be written
+	 * @return mixed the number of bytes written, the bytes read, or FALSE on failure
+	 */
+	private function file_cull_contents($filename, $offset = 0, $bytes = null, $whence = SEEK_SET, $data = null){
+		if(!isset($bytes)){
+			if(false === $handle = @fopen($filename, 'r+b')) return false;
+			if(-1 === fseek($handle, $offset, $whence)) return false;
+			if(false === $data = @fwrite($handle, $data)) return false;
+			if(!fclose($handle)) return false;
+			return $data;
+		}else{
+			if(false === $handle = @fopen($filename, 'rb')) return false;
+			if(-1 === fseek($handle, $offset, $whence)) return false;
+			if(false === $data = @fread($handle, $bytes)) return false;
+			if(!fclose($handle)) return false;
+			return $data;
+		}
+	}
+	
 }
+
 ?>

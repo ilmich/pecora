@@ -26,13 +26,13 @@ class Mutex {
 	 *
 	 * @param string $dirname file to be locked
 	 */
-	function Mutex($dirname){
+	public function __construct($dirname){
 		/**
 		 * Parameter passing error handling
 		 */
 
 		if(!is_string($dirname))
-			trigger_error('[Mutex.php] &lt; ' . __LINE__ . ' &gt;', E_USER_ERROR);
+			throw new Exception("Lock name is not a valid string");
 
 		/**
 		 * Code section
@@ -54,7 +54,8 @@ class Mutex {
 		 */
 
 		$fp=false;		
-		if(!is_int($polling) || $polling < 1) $polling = 1;
+		if(!is_int($polling) || $polling < 1) 
+			$polling = 1;
 
 		$retry = intval((ini_get('max_execution_time')/$polling));
 		
@@ -87,7 +88,7 @@ class Mutex {
 
 		// Delete the directory with the extension '.lck'
 		if(!@rmdir($this->dirname))
-			return !trigger_error('[Mutex.php] &lt; ' . __LINE__ . ' &gt;', E_USER_WARNING);
+			return false;
 		// Successful release
 		return true;
 	}
