@@ -152,9 +152,20 @@ class Pecora{
 	 */
 	function getRow($search, $preg = true){
 		// Parameters
-		if(!is_string($search) && !is_int($search))
-			return !trigger_error('[' . basename(__FILE__) . '] &lt; ' . __LINE__ . ' &gt;', E_USER_WARNING);
 		if(!is_bool($preg)) $preg = false;
+		
+		if ($preg) {
+			if (!is_string($search)) {
+				return !trigger_error('[' . basename(__FILE__) . '] &lt; ' . __LINE__ . ' &gt;', E_USER_WARNING);
+			}			
+		}else {
+			if(!is_string($search) && !is_int($search) && !is_array($search))
+				return !trigger_error('[' . basename(__FILE__) . '] &lt; ' . __LINE__ . ' &gt;', E_USER_WARNING);
+
+			if (!is_array($search)) {
+				$search = array($search);
+			}
+		}		
 		
 		// Code
 		if(false === $tableStruct = file_get_contents($this->struct))
@@ -184,15 +195,17 @@ class Pecora{
 				}
 			}
 		}else{
-			$key = sanitize(serialize($search));
-			if(false !== $key = array_search($key, $tableStruct[0])){
-				$key *= 4;
-				if(false === $values = file_cull_contents($this->table, reset(unpack('N', $tableStruct[1][$key] . $tableStruct[1][$key + 1] . $tableStruct[1][$key + 2] . $tableStruct[1][$key + 3])), reset(unpack('N', $tableStruct[2][$key] . $tableStruct[2][$key + 1] . $tableStruct[2][$key + 2] . $tableStruct[2][$key + 3]))))
-					return !trigger_error('[' . basename(__FILE__) . '] &lt; ' . __LINE__ . ' &gt;', E_USER_WARNING);
-				$polarizer = new Polarizer($tableStruct[3], substr($values, 0, -2));
-				if(false === $polarizer = $polarizer->getArr())
-					return !trigger_error('[' . basename(__FILE__) . '] &lt; ' . __LINE__ . ' &gt;', E_USER_WARNING);
-				$ret[$search] = $polarizer;
+			foreach ($search as $find) {
+				$key = sanitize(serialize($find));
+				if(false !== $key = array_search($key, $tableStruct[0])){
+					$key *= 4;
+					if(false === $values = file_cull_contents($this->table, reset(unpack('N', $tableStruct[1][$key] . $tableStruct[1][$key + 1] . $tableStruct[1][$key + 2] . $tableStruct[1][$key + 3])), reset(unpack('N', $tableStruct[2][$key] . $tableStruct[2][$key + 1] . $tableStruct[2][$key + 2] . $tableStruct[2][$key + 3]))))
+						return !trigger_error('[' . basename(__FILE__) . '] &lt; ' . __LINE__ . ' &gt;', E_USER_WARNING);
+					$polarizer = new Polarizer($tableStruct[3], substr($values, 0, -2));
+					if(false === $polarizer = $polarizer->getArr())
+						return !trigger_error('[' . basename(__FILE__) . '] &lt; ' . __LINE__ . ' &gt;', E_USER_WARNING);
+					$ret[$find] = $polarizer;
+				}
 			}
 		}
 		if(empty($ret)) return false;
@@ -358,16 +371,28 @@ class Pecora{
 	/**
 	 * A method that deletes rows within a table based on a search
 	 *
-	 * @param string $row regular expression search pattern or case-sensitive row label
+	 * @param string $search regular expression search pattern or case-sensitive row label
 	 * @param boolean $preg whether to use parameter $row as a regular expression or a case-sensitive string
 	 * @param boolean $atomic whether or not file modifications should be atomic
 	 * @return boolean TRUE on success FALSE on failure
 	 */
-	function deleteRow($row, $preg = true, $atomic = true){
+	function deleteRow($search, $preg = true, $atomic = true){
 		// Parameters
-		if(!is_string($row) && !is_int($row))
-			return !trigger_error('[' . basename(__FILE__) . '] &lt; ' . __LINE__ . ' &gt;', E_USER_WARNING);
-		if(!is_bool($preg)) $preg = false;
+		if(!is_bool($preg)) $preg = false;		
+		
+		if ($preg) {
+			if (!is_string($search)) {
+				return !trigger_error('[' . basename(__FILE__) . '] &lt; ' . __LINE__ . ' &gt;', E_USER_WARNING);
+			}			
+		}else {
+			if(!is_string($search) && !is_int($search) && !is_array($search))
+				return !trigger_error('[' . basename(__FILE__) . '] &lt; ' . __LINE__ . ' &gt;', E_USER_WARNING);
+
+			if (!is_array($search)) {
+				$search = array($search);
+			}
+		}		
+				
 		if(!is_bool($atomic)) $atomic = true;
 
 		// Atomicity
@@ -387,7 +412,7 @@ class Pecora{
 		
 		if($preg){
 			foreach($tableStruct[0] as $key => $value){
-				if(preg_match($row, unserialize(desanitize($value)))){
+				if(preg_match($search, unserialize(desanitize($value)))){
 					unset($tableStruct[0][$key]);
 					$key *= 4;
 					$tableStruct[1] = substr_replace($tableStruct[1], '', $key, 4);
@@ -397,14 +422,16 @@ class Pecora{
 				}
 			}
 		}else{
-			$key = sanitize(serialize($row));
-			if(false !== $key = array_search($key, $tableStruct[0])){
-				unset($tableStruct[0][$key]);
-				$key *= 4;
-				$tableStruct[1] = substr_replace($tableStruct[1], '', $key, 4);
-				$tableStruct[2] = substr_replace($tableStruct[2], '', $key, 4);
-				$tableStruct[4][3]++;
-				$tableStruct[4][2]--;
+			foreach ($search as $row) {
+				$key = sanitize(serialize($row));
+				if(false !== $key = array_search($key, $tableStruct[0])){
+					unset($tableStruct[0][$key]);
+					$key *= 4;
+					$tableStruct[1] = substr_replace($tableStruct[1], '', $key, 4);
+					$tableStruct[2] = substr_replace($tableStruct[2], '', $key, 4);
+					$tableStruct[4][3]++;
+					$tableStruct[4][2]--;
+				}
 			}
 		}
 
