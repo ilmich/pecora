@@ -288,6 +288,9 @@ class Pecora{
 			$structOut = substr($structOut, 8, -4);
 		}else{
 			$length = reset($data);
+			if(!is_array($length) || empty($length))
+				throw new Exception("Invalid or empty data");
+				
 			$offset = key($data);
 	
 			$length = new Polarizer($length);
