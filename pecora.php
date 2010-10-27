@@ -157,26 +157,22 @@ class Pecora{
 		}		
 		
 		// Code
-		if(false === $tableStruct = @file_get_contents($this->struct))
-			return !trigger_error('Struct file '.$this->struct(true).' not found or not readable', E_USER_WARNING);
-			
-		$tableStruct = substr($tableStruct, 8, -4);
-		$tableStruct = explode(Polarizer::P_SSEP, $tableStruct);
-		$tableStruct[0] = explode(Polarizer::P_FSEP, substr($tableStruct[0], 0, -2));
-		
-		$tableStruct[1] = Polarizer::desanitize($tableStruct[1]);
-		$tableStruct[2] = Polarizer::desanitize($tableStruct[2]);
+		if(false === $tableStruct = @file_get_contents($this->struct,null,null,14))
+			return !trigger_error('Struct file '.$this->struct(true).' not found or not readable', E_USER_WARNING);			
 
+		$tableStruct = explode(Polarizer::P_SSEP, $tableStruct);
+		$tableStruct[0] = explode(Polarizer::P_FSEP, $tableStruct[0]);		
+		
 		$ret = array();
 		if($preg){
-			$tableStruct[0] = array_map(array('Polarizer','desanitize'), $tableStruct[0]);
+			$tableStruct[0] = array_map(array('Polarizer','desanitize'), $tableStruct[0]);			
 			$tableStruct[0] = array_map('unserialize', $tableStruct[0]);
 			$tableStruct[1] = unpack('N*', $tableStruct[1]);
 			$tableStruct[2] = unpack('N*', $tableStruct[2]);
 			foreach($tableStruct[0] as $key => $rowLabel){
 				$key++;
 				if(preg_match($search, $rowLabel)){
-					if(false === $values = $this->file_cull_contents($this->table, $tableStruct[1][$key], $tableStruct[2][$key]))
+					if(false === $values = file_get_contents($this->table, null,null,14+$tableStruct[1][$key], $tableStruct[2][$key]))
 						throw new Exception("Unable to load row ".$rowLabel." at offset ".$tableStruct[1][$key]." with lenght ".$tableStruct[2][$key]);
 					$polarizer = new Polarizer($tableStruct[3], substr($values, 0, -2));
 					if(false === $polarizer = $polarizer->getArr())
@@ -189,7 +185,8 @@ class Pecora{
 				$key = Polarizer::sanitize(serialize($find));
 				if(false !== $key = array_search($key, $tableStruct[0])){
 					$key *= 4;
-					if(false === $values = $this->file_cull_contents($this->table, reset(unpack('N', $tableStruct[1][$key] . $tableStruct[1][$key + 1] . $tableStruct[1][$key + 2] . $tableStruct[1][$key + 3])), reset(unpack('N', $tableStruct[2][$key] . $tableStruct[2][$key + 1] . $tableStruct[2][$key + 2] . $tableStruct[2][$key + 3]))))
+					
+					if(false === $values = file_get_contents($this->table, null,null,14+reset(unpack('N', $tableStruct[1][$key] . $tableStruct[1][$key + 1] . $tableStruct[1][$key + 2] . $tableStruct[1][$key + 3])), reset(unpack('N', $tableStruct[2][$key] . $tableStruct[2][$key + 1] . $tableStruct[2][$key + 2] . $tableStruct[2][$key + 3]))))
 						throw new Exception("Unable to load row ".$rowLabel." at offset ".reset(unpack('N', $tableStruct[1][$key] . $tableStruct[1][$key + 1] . $tableStruct[1][$key + 2] . $tableStruct[1][$key + 3]))
 																			." with lenght ".reset(unpack('N', $tableStruct[2][$key] . $tableStruct[2][$key + 1] . $tableStruct[2][$key + 2] . $tableStruct[2][$key + 3])));
 					$polarizer = new Polarizer($tableStruct[3], substr($values, 0, -2));
@@ -213,21 +210,21 @@ class Pecora{
 	 */
 	public function query(){
 		// Code
-		if(false === $tableStruct = file_get_contents($this->struct))
+		if(false === $tableStruct = file_get_contents($this->struct,null,null,14))
 			return !trigger_error('Struct file '.$this->struct(true).' not found or not readable', E_USER_WARNING);
-		$tableStruct = substr($tableStruct, 8, -4);
-		if(false === $rows = file_get_contents($this->table))
+		
+		if(false === $rows = file_get_contents($this->table,null,null,14))
 			return !trigger_error('Table file '.$this->table(true).' not found or not readable', E_USER_WARNING);
 
-		$tableStruct = explode(Polarizer::P_SSEP, $tableStruct);
+		$tableStruct = explode(Polarizer::P_SSEP, $tableStruct);		
 		$columns = $tableStruct[3];
-		$tableStruct[0] = explode(Polarizer::P_FSEP, substr($tableStruct[0], 0, -2));
-		
-		$tableStruct[0] = array_map(array('Polarizer','desanitize'), $tableStruct[0]);
+		$tableStruct[0] = explode(Polarizer::P_FSEP, $tableStruct[0]);		
+		$tableStruct[0] = array_map(array('Polarizer','desanitize'), $tableStruct[0]);		
 		$tableStruct[0] = array_map('unserialize', $tableStruct[0]);
+		
 		$tableStruct[1] = unpack('N*', Polarizer::desanitize($tableStruct[1]));
-		$tableStruct[2] = unpack('N*', Polarizer::desanitize($tableStruct[2]));
-
+		$tableStruct[2] = unpack('N*', Polarizer::desanitize($tableStruct[2]));		
+		
 		$modStruct = array();
 		foreach($tableStruct[0] as $key => $value){
 			$key++;
@@ -246,10 +243,10 @@ class Pecora{
 	 */
 	public function entries(){
 		// Code		
-		if(false === $tableStruct = file_get_contents($this->struct))
+		if(false === $tableStruct = file_get_contents($this->struct,null,null,14))
 			return !trigger_error('Struct file '.$this->struct(true).' not found or not readable', E_USER_WARNING);
-		$tableStruct = substr($tableStruct, 8, -4);
-		$tableStruct = explode(P_SSEP, $tableStruct);
+		
+		$tableStruct = explode(Polarizer::P_SSEP, $tableStruct);
 		
 		$tableStruct[4] = unpack('N*', Polarizer::desanitize($tableStruct[4]));
 		
@@ -284,9 +281,7 @@ class Pecora{
 		$offset = 0;
 		$length = 0;
 
-		if(false !== $structOut = @file_get_contents($this->struct)){
-			$structOut = substr($structOut, 8, -4);
-		}else{
+		if(false === $structOut = @file_get_contents($this->struct,NULL,NULL,14)){
 			$length = reset($data);
 			if(!is_array($length) || empty($length))
 				throw new Exception("Invalid or empty data");
@@ -298,13 +293,13 @@ class Pecora{
 			$length = $length->getKeys();
 			
 			$structOut = strlen($tableOut);
-	
-			$structOut = Polarizer::sanitize(serialize($offset)) . Polarizer::P_FSEP . Polarizer::P_SSEP . "\x00\x00\x00\x08" . Polarizer::P_SSEP . Polarizer::sanitize(pack('N', $structOut & self::M_PMASK)) . Polarizer::P_SSEP . $length . Polarizer::P_SSEP . Polarizer::sanitize(pack('N*', (8 + $structOut) & self::M_PMASK)) . "\x00\x00\x00\x01\x00\x00\x00\x00";
+
+			$structOut = Polarizer::sanitize(serialize($offset))  . Polarizer::P_SSEP . "\x00\x00\x00\x00" . Polarizer::P_SSEP . Polarizer::sanitize(pack('N', $structOut & self::M_PMASK)) . Polarizer::P_SSEP . $length . Polarizer::P_SSEP . Polarizer::sanitize(pack('N*', ($structOut) & self::M_PMASK)) . "\x00\x00\x00\x01\x00\x00\x00\x00";
 			unset($data[$offset]);
 		}
 
 		$structOut = explode(Polarizer::P_SSEP, $structOut);
-		$structOut[0] = explode(Polarizer::P_FSEP, substr($structOut[0], 0, -2));
+		$structOut[0] = explode(Polarizer::P_FSEP, $structOut[0]);
 		
 		$structOut[1] = Polarizer::desanitize($structOut[1]);
 		$structOut[2] = Polarizer::desanitize($structOut[2]);
@@ -343,24 +338,23 @@ class Pecora{
 			$tableOut .= $polarizer;
 		}
 		
-		$structOut[0] = implode(Polarizer::P_FSEP, $structOut[0]) . Polarizer::P_FSEP;
+		$structOut[0] = implode(Polarizer::P_FSEP, $structOut[0]);
 		
 		$structOut[1] = Polarizer::sanitize($structOut[1]);
 		$structOut[2] = Polarizer::sanitize($structOut[2]);
 		$structOut[4] = Polarizer::sanitize(pack('N*', $structOut[4][1] & self::M_PMASK, $structOut[4][2] & self::M_PMASK, $structOut[4][3] & self::M_PMASK));
+		
+		$structOut = '<?php die();?>' . implode(Polarizer::P_SSEP, $structOut);
 
-		$structOut = '<?php /*' . implode(Polarizer::P_SSEP, $structOut) . '*/?>';
-
-		if(false === $this->file_place_contents($this->struct, $structOut))
+		if(false === file_put_contents($this->struct, $structOut))
 			throw new Exception('Unable to write struct file');
-
-		$tableOut .= '*/?>';
-
-		if(false === $this->file_cull_contents($this->table, -4, null, SEEK_END, $tableOut)){
-			$tableOut = '<?php /*' . $tableOut;
-			if(false === $this->file_place_contents($this->table, $tableOut))
-				throw new Exception('Unable to write table file');
+		
+		if (!file_exists($this->table)) {
+			$tableOut = '<?php die();?>' . $tableOut;
 		}
+		
+		if(false === file_put_contents($this->table, $tableOut,FILE_APPEND))
+			throw new Exception('Unable to write table file');			
 
 		return true;
 	}
@@ -398,11 +392,10 @@ class Pecora{
 				throw new Exception("Lock not yet acquired");
 
 		// Code
-		if(false === $tableStruct = file_get_contents($this->struct))
-			return !trigger_error('Struct file '.$this->struct(true).' not found or not readable', E_USER_WARNING);
-		$tableStruct = substr($tableStruct, 8, -4);
+		if(false === $tableStruct = file_get_contents($this->struct,null,null,14))
+			return !trigger_error('Struct file '.$this->struct(true).' not found or not readable', E_USER_WARNING);		
 		$tableStruct = explode(Polarizer::P_SSEP, $tableStruct);
-		$tableStruct[0] = explode(Polarizer::P_FSEP, substr($tableStruct[0], 0, -2));
+		$tableStruct[0] = explode(Polarizer::P_FSEP, $tableStruct[0]);
 		$tableStruct[1] = Polarizer::desanitize($tableStruct[1]);
 		$tableStruct[2] = Polarizer::desanitize($tableStruct[2]);
 		$tableStruct[4] = unpack('N*', Polarizer::desanitize($tableStruct[4]));
@@ -436,14 +429,14 @@ class Pecora{
 			if(!unlink($this->table) || !unlink($this->struct))
 				return !trigger_error('Unable to delete empty struct file '.$this->struct(true), E_USER_WARNING);
 		}else{
-			$tableStruct[0] = implode(Polarizer::P_FSEP, $tableStruct[0]) . Polarizer::P_FSEP;
+			$tableStruct[0] = implode(Polarizer::P_FSEP, $tableStruct[0]);
 			$tableStruct[1] = Polarizer::sanitize($tableStruct[1]);
 			$tableStruct[2] = Polarizer::sanitize($tableStruct[2]);
 			$tableStruct[4] = Polarizer::sanitize(pack('N*', $tableStruct[4][1] & self::M_PMASK, $tableStruct[4][2] & self::M_PMASK, $tableStruct[4][3] & self::M_PMASK));
 			
-			$tableStruct = '<?php /*' . implode(Polarizer::P_SSEP, $tableStruct) . '*/?>';
+			$tableStruct = '<?php die();?>' . implode(Polarizer::P_SSEP, $tableStruct);
 
-			if(false === $this->file_place_contents($this->struct, $tableStruct))
+			if(false === file_put_contents($this->struct, $tableStruct))
 				throw new Exception('Unable to write struct file');
 		}
 		return true;
@@ -465,19 +458,19 @@ class Pecora{
 				throw new Exception("Lock not yet acquired");
 
 		// Code
-		if(false === $rows = file_get_contents($this->table))
+		if(false === $rows = file_get_contents($this->table,null,null,14))
 			return !trigger_error('Table file '.$this->table(true).' not found or not readable', E_USER_WARNING);
-		if(false === $tableStruct = file_get_contents($this->struct))
+		if(false === $tableStruct = file_get_contents($this->struct,null,null,14))
 			return !trigger_error('Struct file '.$this->struct(true).' not found or not readable', E_USER_WARNING);
-		$tableStruct = substr($tableStruct, 8, -4);
+		
 		$tableStruct = explode(Polarizer::P_SSEP, $tableStruct);
 		$tableStruct[1] = unpack('N*', Polarizer::desanitize($tableStruct[1]));
 		$tableStruct[2] = unpack('N*', Polarizer::desanitize($tableStruct[2]));
 		$tableStruct[4] = unpack('N*', Polarizer::desanitize($tableStruct[4]));
 		
-		$tableOut = '<?php /*';
+		$tableOut = '<?php die();?>';
 		
-		$offset = 8;
+		$offset = 0;
 		foreach($tableStruct[2] as $key => $value){
 			$tableOut .= substr($rows, $tableStruct[1][$key], $value);
 			$tableStruct[1][$key] = pack('N', $offset & self::M_PMASK);
@@ -485,69 +478,22 @@ class Pecora{
 			$offset += $value;
 		}
 		
-		$tableOut .= '*/?>';
+		
 		
 		$tableStruct[1] = Polarizer::sanitize(implode('', $tableStruct[1]));
 		$tableStruct[2] = Polarizer::sanitize(implode('', $tableStruct[2]));
 		
 		$tableStruct[4] = Polarizer::sanitize(pack('N*', $offset & self::M_PMASK, $tableStruct[4][2] & self::M_PMASK) . "\x00\x00\x00\x00");
 		
-		$tableStruct = '<?php /*' . implode(Polarizer::P_SSEP, $tableStruct) . '*/?>';
+		$tableStruct = '<?php die();?>' . implode(Polarizer::P_SSEP, $tableStruct);
 		
-		if(false === $this->file_place_contents($this->struct, $tableStruct))
+		if(false === file_put_contents($this->struct, $tableStruct))
 			throw new Exception('Unable to write struct file');
-		if(false === $this->file_place_contents($this->table, $tableOut))
+		if(false === file_put_contents($this->table, $tableOut))
 			throw new Exception('Unable to write table file');
 
 		return true;
-	}
-	
-	/**
-	 * A function that writes content to a file
-	 *
-	 * @param string $filename the file to be written
-	 * @param string $data the data to be written to the file
-	 * @return integer the number of bytes written or FALSE on failure
-	 */
-	private function file_place_contents($filename, $data){
-		
-		if(false === $handle = @fopen($filename, "wb")) 
-			return false;
-	
-		if(false === $bytes = @fwrite($handle, $data)) 
-			return false;
-	
-		if(!fclose($handle)) 
-			return false;
-		
-		return $bytes;
-	}
-	
-	/**
-	 * A function that reads/writes content to a file
-	 *
-	 * @param string $filename the file to be read/written
-	 * @param integer $offset the offset from where to begin the read/write operation
-	 * @param integer $bytes the number of bytes to be read
-	 * @param integer $whence the location from where to compute offset for fseek
-	 * @param string $data the data to be written
-	 * @return mixed the number of bytes written, the bytes read, or FALSE on failure
-	 */
-	private function file_cull_contents($filename, $offset = 0, $bytes = null, $whence = SEEK_SET, $data = null){
-		if(!isset($bytes)){
-			if(false === $handle = @fopen($filename, 'r+b')) return false;
-			if(-1 === fseek($handle, $offset, $whence)) return false;
-			if(false === $data = @fwrite($handle, $data)) return false;
-			if(!fclose($handle)) return false;
-			return $data;
-		}else{
-			if(false === $handle = @fopen($filename, 'rb')) return false;
-			if(-1 === fseek($handle, $offset, $whence)) return false;
-			if(false === $data = @fread($handle, $bytes)) return false;
-			if(!fclose($handle)) return false;
-			return $data;
-		}
-	}
+	}	
 	
 }
 

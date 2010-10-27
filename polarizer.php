@@ -151,8 +151,8 @@ class Polarizer {
  	* @param string $entry the data to be sanitized
  	* @return string sanitized data
  	*/
-	public static function sanitize($entry){
-		return preg_replace(array('/\\x1a/', '/\\x2a\\x2f/'), array(self::P_SUB, self::P_HAZ), $entry);
+	public static function sanitize($entry){	
+		return str_replace('\x1a', self::P_SUB, $entry);
 	}
 
 	/**
@@ -162,8 +162,8 @@ class Polarizer {
 	 * @return string desanitized data
 	 */
 	
-	public static function desanitize($entry){	
-		return preg_replace(array('/\\x1a2/', '/\\x1a0/'), array(self::P_VUL, self::P_DLM), $entry);
+	public static function desanitize($entry){
+		return str_replace('\x1a0/', self::P_DLM, $entry);
 	}
 
 }
