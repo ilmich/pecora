@@ -163,7 +163,7 @@ class Polarizer {
 	 */
 	
 	public static function desanitize($entry){
-		return str_replace('\x1a0/', self::P_DLM, $entry);
+		return str_replace('\x1a0', self::P_DLM, $entry);
 	}
 
 }
