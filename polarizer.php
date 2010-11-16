@@ -11,49 +11,21 @@ error_reporting(E_ALL);
 /**
  * The Polarizer class takes an array and decomposes its key=>value pairs into a serialized key string and a serialized value string. It also recombines said strings into the original array.
  */
-class Polarizer {
-	
-	/**
- 	* Defines the delimeter character used to sanitize and separate polarized data
- 	*
- 	* @access private
- 	*/
-	const P_DLM = "\x1a";	// ASCII 26
-
-	/**
-	 * Defines the string that causes vulnerability issues
-	 *
-	 * @access private
-	 */
-	const P_VUL = "\x2a\x2f";	// Refers to multi-line comment */
-	
-	/**
-	 * Defines the substitution string for the delimeter character
-	 *
-	 * @access private
-	 */
-	const P_SUB = "\x1a0";	// Substitute for ASCII char 26
-	
-	/**
-	 * Defines the substitution string for sanitizing polarized data
-	 *
-	 * @access private
-	 */
-	const P_HAZ = "\x1a2";	// Substitute for multi-line
+class Polarizer {	
 	
 	/**
 	 * Defines the field separation string for polarized data
 	 *
 	 * @access private
 	 */
-	const P_FSEP = "\x1a1";	// Field Separator
+	const P_FSEP = "\x1e";	// Field Separator
 	
 	/**
 	 * Defines the section separation string for polarized data
 	 *
 	 * @access private
 	 */
-	const P_SSEP = "\x1a3";	// Section Separator
+	const P_SSEP = "\x1f";	// Section Separator
 		
 	/**
      * A private variable that holds the array
@@ -89,32 +61,13 @@ class Polarizer {
 		// Split the array into polarized strings
 		if(is_array($keys)){
 			$this->arr = $keys;
-			$this->keys = '';
-			$this->values = '';
-			foreach($keys as $k => $v){
-				$this->keys .= self::sanitize(serialize($k)) .self::P_FSEP;
-				$this->values .= self::sanitize(serialize($v)) . self::P_FSEP;
-			}
+			$this->keys = serialize(array_keys($keys));
+			$this->values = serialize(array_values($keys));			
 		// Join two polarized strings
 		}else{
-			$this->keys = $keys;
-			$this->values = $values;
-			$limit = '0';
-			$output = ':{';
-			while(false !== $temp = strpos($keys, self::P_FSEP)){
-				$limit = bcadd($limit, '1');
-				$output .= substr($keys, 0, $temp);
-				$keys = substr($keys, $temp + 2);
-				$temp = strpos($values, self::P_FSEP);
-				$output .= substr($values, 0, $temp);
-				$values = substr($values, $temp + 2);
-			}
-			$output .= '}';
-			if(false === $this->arr = unserialize(self::desanitize('a:' . $limit . $output))){
-				$this->arr = false;
-				$this->keys = false;
-				$this->values = false;
-			}
+			$this->keys = unserialize($keys);
+			$this->values = unserialize($values);					
+			$this->arr = array_combine($this->keys,$this->values);
 		}
 	}
 
@@ -152,7 +105,7 @@ class Polarizer {
  	* @return string sanitized data
  	*/
 	public static function sanitize($entry){	
-		return str_replace('\x1a', self::P_SUB, $entry);
+		return base64_encode($entry);
 	}
 
 	/**
@@ -163,8 +116,7 @@ class Polarizer {
 	 */
 	
 	public static function desanitize($entry){
-		return str_replace('\x1a0', self::P_DLM, $entry);
+		return base64_decode($entry);		
 	}
 
 }
-?>
