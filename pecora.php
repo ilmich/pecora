@@ -199,7 +199,8 @@ class Pecora{
 		}else{
 			foreach ($search as $find) {
 				$key = serialize($find);
-				if(false !== $key = array_search($key, $tableStruct[0])){				
+				if(false !== $key = array_search($key, $tableStruct[0])){									
+					$key++;
 					if(false === $values = file_get_contents($this->table, null,null,14+$tableStruct[1][$key], $tableStruct[2][$key]))
 						throw new Exception("Unable to load row ".$rowLabel." at offset ".reset(unpack('N', $tableStruct[1][$key] . $tableStruct[1][$key + 1] . $tableStruct[1][$key + 2] . $tableStruct[1][$key + 3]))
 																			." with lenght ".reset(unpack('N', $tableStruct[2][$key] . $tableStruct[2][$key + 1] . $tableStruct[2][$key + 2] . $tableStruct[2][$key + 3])));
