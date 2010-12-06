@@ -26,22 +26,6 @@ class Polarizer {
 	 * @access private
 	 */
 	const P_SSEP = "\x1f";	// Section Separator
-		
-	/**
-     * A private variable that holds the array
-     *
-     * @access private
-     * @var array
-     */
-	var $arr;
-	
-	/**
-     * A private variable that holds the serialized key(s)
-     *
-     * @access private
-     * @var string
-     */
-	var $keys;
 	
 	/**
      * A private variable that holds the serialized value(s)
@@ -57,29 +41,16 @@ class Polarizer {
 	 * @param mixed $keys array or serialized key(s)
 	 * @param string $values serialized value(s)
 	 */
-	public function __construct($keys, $values = null){
+	public function __construct($keys){
 		// Split the array into polarized strings
-		if(is_array($keys)){
-			$this->arr = $keys;
-			$this->keys = serialize(array_keys($keys));
-			$this->values = serialize(array_values($keys));			
+		if(is_array($keys)){			
+			$this->values = serialize($keys);			
 		// Join two polarized strings
 		}else{
-			$this->keys = unserialize($keys);
-			$this->values = unserialize($values);					
-			$this->arr = array_combine($this->keys,$this->values);
+			$this->values = unserialize($keys);			
 		}
 	}
-
-	/**
-	 * A method that returns serialized keys from a serialized array
-	 *
-	 * @return string serialized key(s) or FALSE on failure
-	 */
-	public function getKeys(){
-		return $this->keys;
-	}
-
+	
 	/**
 	 * A method that returns serialized values from a serialized array
 	 *
@@ -91,11 +62,12 @@ class Polarizer {
 
 	/**
 	 * A method that returns an array from serialized keys and serialized values
-	 *
+	 * 
+	 * @deprecated 
 	 * @return array array or FALSE on failure
 	 */
 	public function getArr(){
-		return $this->arr;
+		return $this->values;
 	}
 
 	/**

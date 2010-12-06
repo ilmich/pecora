@@ -36,7 +36,7 @@ class Pecora{
  	* @access private
  	* @var string
  	*/
-	const VERSION="3.0";
+	const VERSION="3.1";
 	
 	/**
 	* Pecora internal engine version
@@ -44,7 +44,7 @@ class Pecora{
  	* @access private
  	* @var string
  	*/
-	const ENGINE_VERSION="2.0";
+	const ENGINE_VERSION="3.0";
 	
 	
 	/**
@@ -190,7 +190,7 @@ class Pecora{
 				if(preg_match($search, $rowLabel)){
 					if(false === $values = file_get_contents($this->table, null,null,14+$tableStruct[1][$key], $tableStruct[2][$key]))
 						throw new Exception("Unable to load row ".$rowLabel." at offset ".$tableStruct[1][$key]." with lenght ".$tableStruct[2][$key]);
-					$polarizer = new Polarizer($tableStruct[3], $values); //substr($values, 0, -2));
+					$polarizer = new Polarizer($values); //substr($values, 0, -2));
 					if(false === $polarizer = $polarizer->getArr())
 						throw new Exception("Unable to deserialize row ".$rowLabel);
 					$ret[$rowLabel] = $polarizer;
@@ -204,7 +204,7 @@ class Pecora{
 					if(false === $values = file_get_contents($this->table, null,null,14+$tableStruct[1][$key], $tableStruct[2][$key]))
 						throw new Exception("Unable to load row ".$rowLabel." at offset ".reset(unpack('N', $tableStruct[1][$key] . $tableStruct[1][$key + 1] . $tableStruct[1][$key + 2] . $tableStruct[1][$key + 3]))
 																			." with lenght ".reset(unpack('N', $tableStruct[2][$key] . $tableStruct[2][$key + 1] . $tableStruct[2][$key + 2] . $tableStruct[2][$key + 3])));
-					$polarizer = new Polarizer($tableStruct[3], $values); //substr($values, 0, -2));
+					$polarizer = new Polarizer($values); //substr($values, 0, -2));
 					if(false === $polarizer = $polarizer->getArr())
 						throw new Exception("Unable to deserialize row ".$rowLabel);
 					$ret[$find] = $polarizer;
@@ -232,7 +232,6 @@ class Pecora{
 			return !trigger_error('Table file '.$this->table(true).' not found or not readable', E_USER_WARNING);
 
 		$tableStruct = explode(Polarizer::P_SSEP, $tableStruct);		
-		$columns = $tableStruct[3];
 		$tableStruct[0] = explode(Polarizer::P_FSEP, $tableStruct[0]);				
 		$tableStruct[0] = array_map('unserialize', $tableStruct[0]);
 		
@@ -242,7 +241,7 @@ class Pecora{
 		$modStruct = array();
 		foreach($tableStruct[0] as $key => $value){
 			$key++;
-			$polarizer = new Polarizer($tableStruct[3], substr($rows, $tableStruct[1][$key], $tableStruct[2][$key]));
+			$polarizer = new Polarizer(substr($rows, $tableStruct[1][$key], $tableStruct[2][$key]));
 			if(false === $polarizer = $polarizer->getArr())
 				throw new Exception("Unable to deserialize row ".$value);
 			$modStruct[$value] = $polarizer;
@@ -262,11 +261,11 @@ class Pecora{
 		
 		$tableStruct = explode(Polarizer::P_SSEP, $tableStruct);
 		
-		$tableStruct[4] = unpack('N*', base64_decode($tableStruct[4]));
+		$tableStruct[3] = unpack('N*', base64_decode($tableStruct[3]));
 		
 		return array(
-			'history' => $tableStruct[4][2] + $tableStruct[4][3], 
-			'unique' => $tableStruct[4][2]
+			'history' => $tableStruct[3][2] + $tableStruct[3][3], 
+			'unique' => $tableStruct[3][2]
 		);
 	}
 	
@@ -281,11 +280,11 @@ class Pecora{
 			return !trigger_error('Struct file '.$this->struct(true).' not found or not readable', E_USER_WARNING);
 		
 		$tableStruct = explode(Polarizer::P_SSEP, $tableStruct);		
-		$tableStruct[5] = explode(Polarizer::P_FSEP,$tableStruct[5]);
+		$tableStruct[4] = explode(Polarizer::P_FSEP,$tableStruct[4]);
 		
 		return array(
-			'version' => $tableStruct[5][0], 
-			'ctime' => $tableStruct[5][1]
+			'version' => $tableStruct[4][0], 
+			'ctime' => $tableStruct[4][1]
 		);
 	}
 	
@@ -325,15 +324,13 @@ class Pecora{
 				throw new Exception("Invalid or empty data");
 			
 			$length = new Polarizer($length);
-			$tableOut .= $length->getValues() . Polarizer::P_SSEP;
-			$length = $length->getKeys();
+			$tableOut .= $length->getValues() . Polarizer::P_SSEP;			
 			
 			$structOut = strlen($tableOut);
 
 			$structOut = serialize($offset)  . Polarizer::P_SSEP . //elenco chiavi separato da P_FSEP
 											Polarizer::sanitize("\x00\x00\x00\x00") . Polarizer::P_SSEP . //offset scritto in intero da 4 byte
-											Polarizer::sanitize(pack('N', $structOut & self::M_PMASK)) . Polarizer::P_SSEP . //lunghezza scritta in intero da 4 byte
-											$length . Polarizer::P_SSEP . //elenco chiavi
+											Polarizer::sanitize(pack('N', $structOut & self::M_PMASK)) . Polarizer::P_SSEP . //lunghezza scritta in intero da 4 byte											
 												Polarizer::sanitize(pack('N*', ($structOut) & self::M_PMASK) . //lunghezza del file
 												"\x00\x00\x00\x01". //numero di chiavi uniche
 												"\x00\x00\x00\x00").Polarizer::P_SSEP . //numero di storia
@@ -347,7 +344,7 @@ class Pecora{
 		$structOut[1] = Polarizer::desanitize($structOut[1]);
 		$structOut[2] = Polarizer::desanitize($structOut[2]);
 		
-		$structOut[4] = unpack('N*', Polarizer::desanitize($structOut[4]));
+		$structOut[3] = unpack('N*', Polarizer::desanitize($structOut[3]));
 		
 		foreach($data as $rowLabel => $rowData){
 			// Parameters still to be checked
@@ -360,14 +357,14 @@ class Pecora{
 			$length = strlen($polarizer);
 			
 			if(false !== $key = array_search($rowLabel, $structOut[0])){
-				$structOut[4][3]++;
+				$structOut[3][3]++;
 			}else{
-				$key = $structOut[4][2];
-				$structOut[4][2]++;
+				$key = $structOut[3][2];
+				$structOut[3][2]++;
 				$structOut[0][] = $rowLabel;
 			}
 			$key *= 4;
-			$temp = pack('N', $structOut[4][1] & self::M_PMASK);
+			$temp = pack('N', $structOut[3][1] & self::M_PMASK);
 			$structOut[1][$key] = $temp[0];
 			$structOut[1][$key + 1] = $temp[1];
 			$structOut[1][$key + 2] = $temp[2];
@@ -377,7 +374,7 @@ class Pecora{
 			$structOut[2][$key + 1] = $temp[1];
 			$structOut[2][$key + 2] = $temp[2];
 			$structOut[2][$key + 3] = $temp[3];
-			$structOut[4][1] += $length;
+			$structOut[3][1] += $length;
 			$tableOut .= $polarizer;
 		}
 		
@@ -385,7 +382,7 @@ class Pecora{
 		
 		$structOut[1] = Polarizer::sanitize($structOut[1]);
 		$structOut[2] = Polarizer::sanitize($structOut[2]);
-		$structOut[4] = Polarizer::sanitize(pack('N*', $structOut[4][1] & self::M_PMASK, $structOut[4][2] & self::M_PMASK, $structOut[4][3] & self::M_PMASK));
+		$structOut[3] = Polarizer::sanitize(pack('N*', $structOut[3][1] & self::M_PMASK, $structOut[3][2] & self::M_PMASK, $structOut[3][3] & self::M_PMASK));
 		
 		$structOut = '<?php die();?>' . implode(Polarizer::P_SSEP, $structOut);
 
@@ -441,7 +438,7 @@ class Pecora{
 		$tableStruct[0] = explode(Polarizer::P_FSEP, $tableStruct[0]);
 		$tableStruct[1] = Polarizer::desanitize($tableStruct[1]);
 		$tableStruct[2] = Polarizer::desanitize($tableStruct[2]);
-		$tableStruct[4] = unpack('N*', Polarizer::desanitize($tableStruct[4]));
+		$tableStruct[3] = unpack('N*', Polarizer::desanitize($tableStruct[3]));
 		
 		if($preg){
 			foreach($tableStruct[0] as $key => $value){
@@ -450,8 +447,8 @@ class Pecora{
 					$key *= 4;
 					$tableStruct[1] = substr_replace($tableStruct[1], '', $key, 4);
 					$tableStruct[2] = substr_replace($tableStruct[2], '', $key, 4);
-					$tableStruct[4][3]++;
-					$tableStruct[4][2]--;
+					$tableStruct[3][3]++;
+					$tableStruct[3][2]--;
 				}
 			}
 		}else{
@@ -462,8 +459,8 @@ class Pecora{
 					$key *= 4;
 					$tableStruct[1] = substr_replace($tableStruct[1], '', $key, 4);
 					$tableStruct[2] = substr_replace($tableStruct[2], '', $key, 4);
-					$tableStruct[4][3]++;
-					$tableStruct[4][2]--;
+					$tableStruct[3][3]++;
+					$tableStruct[3][2]--;
 				}
 			}
 		}
@@ -475,7 +472,7 @@ class Pecora{
 			$tableStruct[0] = implode(Polarizer::P_FSEP, $tableStruct[0]);
 			$tableStruct[1] = Polarizer::sanitize($tableStruct[1]);
 			$tableStruct[2] = Polarizer::sanitize($tableStruct[2]);
-			$tableStruct[4] = Polarizer::sanitize(pack('N*', $tableStruct[4][1] & self::M_PMASK, $tableStruct[4][2] & self::M_PMASK, $tableStruct[4][3] & self::M_PMASK));
+			$tableStruct[3] = Polarizer::sanitize(pack('N*', $tableStruct[3][1] & self::M_PMASK, $tableStruct[3][2] & self::M_PMASK, $tableStruct[3][3] & self::M_PMASK));
 			
 			$tableStruct = '<?php die();?>' . implode(Polarizer::P_SSEP, $tableStruct);
 
@@ -509,7 +506,7 @@ class Pecora{
 		$tableStruct = explode(Polarizer::P_SSEP, $tableStruct);
 		$tableStruct[1] = unpack('N*', Polarizer::desanitize($tableStruct[1]));
 		$tableStruct[2] = unpack('N*', Polarizer::desanitize($tableStruct[2]));
-		$tableStruct[4] = unpack('N*', Polarizer::desanitize($tableStruct[4]));
+		$tableStruct[3] = unpack('N*', Polarizer::desanitize($tableStruct[3]));
 		
 		$tableOut = '<?php die();?>';
 		
@@ -524,7 +521,7 @@ class Pecora{
 		$tableStruct[1] = Polarizer::sanitize(implode('', $tableStruct[1]));
 		$tableStruct[2] = Polarizer::sanitize(implode('', $tableStruct[2]));
 		
-		$tableStruct[4] = Polarizer::sanitize(pack('N*', $offset & self::M_PMASK, $tableStruct[4][2] & self::M_PMASK) . "\x00\x00\x00\x00");
+		$tableStruct[3] = Polarizer::sanitize(pack('N*', $offset & self::M_PMASK, $tableStruct[3][2] & self::M_PMASK) . "\x00\x00\x00\x00");
 		
 		$tableStruct = '<?php die();?>' . implode(Polarizer::P_SSEP, $tableStruct);
 		
