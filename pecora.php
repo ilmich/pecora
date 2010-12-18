@@ -9,6 +9,14 @@
 error_reporting(E_ALL);
 
 /**
+ * Class that define Pecora Document object
+ *
+ * @access private
+ */
+
+require_once('pdocument.php');
+
+/**
  * Class required to split arrays into keys and values for storage into database
  *
  * @access private
@@ -532,4 +540,12 @@ class Pecora{
 
 		return true;
 	}	
+	
+	public function createDocument($id=null) {
+		$obj = new PDocument($this);
+		if (!is_null($id)) {
+			$obj->load($id);
+		}
+		return $obj;
+	}
 }
