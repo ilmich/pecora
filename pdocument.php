@@ -7,9 +7,18 @@
 
 class PDocument {
 	
+	/**
+	 * @var Pecora	internal intance of database
+	 */
 	protected $dbHandle;
+	/**
+	 * @var array	array of fields/value
+	 */
 	protected $_data;
-	protected $id;
+	/**
+	 * @var string	id
+	 */
+	protected $_id;
 	
 	public function __construct($dbHandle) {
 		if (is_null($dbHandle) || !($dbHandle instanceof Pecora)) {
@@ -20,11 +29,11 @@ class PDocument {
 	}
 	
 	public function getId() {
-		return $this->id;
+		return $this->_id;
 	}
 	
 	public function setId($id) {
-		$this->id=$id;
+		$this->_id=$id;
 	}
 	
 	public function __set($key,$value) {
@@ -45,7 +54,7 @@ class PDocument {
 			throw new Exception("id must be a valid string");
 		}		
 		
-		$this->id=$id;
+		$this->_id=$id;
 		if ($this->dbHandle->dbExists()) {		
 			$data = $this->dbHandle->getRow($id,false);
 			if ($data) {
@@ -56,7 +65,7 @@ class PDocument {
 	
 	public function save($id=null) {
 		
-		$ids = $this->id;
+		$ids = $this->_id;
 		if (!is_null($id)) {
 			$ids = $id;
 		}
