@@ -124,6 +124,15 @@ class Pecora{
 		
 		return substr(basename($this->struct), 0, -4);
 	}
+	
+	/**
+	 * A method that check if the database exist
+	 *
+	 * @return boolean
+	 */
+	public function dbExists() {
+		return file_exists($this->struct(true)) && file_exists($this->table(true));
+	}
 
 	/**
 	 * A method that locks a table

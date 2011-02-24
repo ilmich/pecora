@@ -44,10 +44,13 @@ class PDocument {
 		if (is_null($id) || !is_string($id)) {
 			throw new Exception("id must be a valid string");
 		}		
+		
 		$this->id=$id;
-		$data = $this->dbHandle->getRow($id,false);
-		if ($data) {
-			$this->_data = $data[$id];
+		if ($this->dbHandle->dbExists()) {		
+			$data = $this->dbHandle->getRow($id,false);
+			if ($data) {
+				$this->_data = $data[$id];
+			}
 		}
 	}
 	
